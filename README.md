@@ -51,7 +51,7 @@ e adicione `NEXT_PUBLIC_APP_URL/auth/callback` em **Authentication → URL Confi
 | `SUPABASE_SERVICE_ROLE_KEY` | sim* | **somente servidor** — formulários públicos, rate limit, solicitações de titulares |
 | `NEXT_PUBLIC_APP_URL` | sim | URL pública (links de e-mail e código de embed) |
 | `IP_HASH_SALT` | recomendada | sal para hash de IP nos envios de formulário |
-| `GOOGLE_PLACES_API_KEY` | não | habilita a pesquisa de empresas (Places API New) |
+| `GOOGLE_PLACES_API_KEY` | não | fonte extra de pesquisa (Places API New). Sem ela, use o OpenStreetMap, que não precisa de chave |
 | `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_ACCESS_TOKEN`, `WHATSAPP_WEBHOOK_VERIFY_TOKEN` | não | WhatsApp Business Platform (envio automatizado oficial) |
 
 \* Sem a chave de serviço o app funciona, mas formulários públicos, DSAR público e rate limiting ficam indisponíveis.
@@ -127,6 +127,7 @@ supabase/
 
 | Integração | Credencial | Observações |
 |---|---|---|
+| **OpenStreetMap (Nominatim + Overpass)** | nenhuma | Gratuito, sem chave; uso comercial permitido com atribuição (ODbL). Exige a cidade na pesquisa. Cobertura de telefone/site varia por região. |
 | **Google Places API (New)** | `GOOGLE_PLACES_API_KEY` | Text Search. Respeite os Termos da Google Maps Platform (restrições de armazenamento/uso do conteúdo); o app exibe esse aviso na pesquisa. Os resultados só são gravados quando o usuário salva. |
 | **Importação CSV** | — | Mapeamento, validação, prévia, deduplicação, relatório de erros e confirmação de base legítima. |
 | **Formulários próprios** | `SUPABASE_SERVICE_ROLE_KEY` | Link público e `<script src=".../embed.js" data-leadfinder-form="slug">`. |

@@ -126,7 +126,7 @@ export async function saveProviderLeadsAction(items: ProviderLead[], segment: st
     const ids: string[] = [];
     for (const item of items.slice(0, 100)) {
       const key = item.providerKey;
-      const name = key === "google_places" ? "Google Places" : key;
+      const name = key === "google_places" ? "Google Places" : key === "openstreetmap" ? "OpenStreetMap" : key;
       const r = await insertLead(ctx, providerLeadToRow(item, segment), { key, name, kind: "provider" });
       ids.push(r.id);
       if (r.duplicate) duplicates++;

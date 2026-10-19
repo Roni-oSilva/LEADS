@@ -18,6 +18,7 @@ export interface ProviderLead {
   companyName: string;
   category?: string | null;
   phone?: string | null;
+  whatsapp?: string | null;
   website?: string | null;
   instagram?: string | null;
   address?: string | null;

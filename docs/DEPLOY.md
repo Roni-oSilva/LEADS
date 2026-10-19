@@ -27,7 +27,11 @@
 3. Faça o deploy. Build: `npm run build`; não há passos extras.
 4. Acesse `/signup`, crie a primeira conta (será o proprietário) e abra **Integrações** → *Testar conexão* para validar Supabase e chave de serviço.
 
-## 3. Google Places (opcional)
+## 3. Fontes de pesquisa
+
+**OpenStreetMap** funciona sem nenhuma configuração (sem chave). **Google Places** é opcional:
+
+### Google Places (opcional)
 
 1. Google Cloud Console → crie/selecione um projeto → ative **Places API (New)** (exige faturamento ativo).
 2. **APIs e serviços → Credenciais → Criar chave de API**; restrinja a chave à *Places API (New)* e defina cotas diárias para limitar custos.

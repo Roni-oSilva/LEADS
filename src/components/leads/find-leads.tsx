@@ -32,7 +32,7 @@ export interface ProviderInfo {
 const PAGE_SIZE = 10;
 
 function preview(r: ResultRow, segment: string | undefined, config: ScoringConfig) {
-  const evidence = analyzeOpportunities({ segment: segment ?? null, website: r.website ?? null, instagram: r.instagram ?? null, whatsapp: r.whatsapp ?? null, phone: r.phone ?? null, source_name: r.providerKey === "google_places" ? "Google Places" : "Fonte" });
+  const evidence = analyzeOpportunities({ segment: segment ?? null, website: r.website ?? null, instagram: r.instagram ?? null, whatsapp: r.whatsapp ?? null, phone: r.phone ?? null, source_name: r.providerKey === "google_places" ? "Google Places" : r.providerKey === "openstreetmap" ? "OpenStreetMap" : "Fonte" });
   const score = scoreLead({ segment: segment ?? null, state: r.state ?? null, city: r.city ?? null, phone: r.phone ?? null, whatsapp: r.whatsapp ?? null, email: null, do_not_contact: false, data_updated_at: r.fetchedAt, showed_interest: false, evidence: evidence.map((e) => ({ confidence: e.confidence, verified: e.verified })) }, config);
   return { evidence, score };
 }
@@ -210,7 +210,7 @@ export function FindLeads({ providers, config, canWrite, template }: { providers
           return (
             <div className="space-y-4 text-sm">
               <dl className="grid gap-3 sm:grid-cols-2">
-                {([["Endereço", detail.address], ["Cidade/UF", [detail.city, detail.state].filter(Boolean).join("/")], ["Telefone", detail.whatsapp || detail.phone], ["Site", detail.website], ["Instagram", detail.instagram], ["Avaliação", detail.rating ? `${detail.rating.toFixed(1)} (${detail.reviewsCount ?? 0} avaliações)` : null], ["Coletado em", formatDate(detail.fetchedAt, true)], ["Fonte", detail.providerKey === "google_places" ? "Google Places" : detail.providerKey === "internal" ? "Minha base" : detail.providerKey]] as [string, string | null][]).map(([k, v]) => (
+                {([["Endereço", detail.address], ["Cidade/UF", [detail.city, detail.state].filter(Boolean).join("/")], ["Telefone", detail.whatsapp || detail.phone], ["Site", detail.website], ["Instagram", detail.instagram], ["Avaliação", detail.rating ? `${detail.rating.toFixed(1)} (${detail.reviewsCount ?? 0} avaliações)` : null], ["Coletado em", formatDate(detail.fetchedAt, true)], ["Fonte", detail.providerKey === "google_places" ? "Google Places" : detail.providerKey === "openstreetmap" ? "OpenStreetMap" : detail.providerKey === "internal" ? "Minha base" : detail.providerKey]] as [string, string | null][]).map(([k, v]) => (
                   <div key={k}><dt className="text-[11px] uppercase tracking-wide text-muted-foreground">{k}</dt><dd className="mt-0.5 break-words">{v || "—"}</dd></div>
                 ))}
               </dl>

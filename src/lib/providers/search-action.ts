@@ -33,7 +33,7 @@ export async function searchLeadsAction(input: SearchInput): Promise<ActionResul
     });
 
     // Marca o que já está salvo na base (deduplicação) usando as chaves de cada resultado.
-    const keysByRef = new Map(res.leads.map((l) => [l.sourceRef, computeDedupeKeys({ company_name: l.companyName, city: l.city, phone: l.phone, website: l.website, source_key: l.providerKey, source_ref: l.sourceRef })]));
+    const keysByRef = new Map(res.leads.map((l) => [l.sourceRef, computeDedupeKeys({ company_name: l.companyName, city: l.city, phone: l.phone, whatsapp: l.whatsapp, website: l.website, source_key: l.providerKey, source_ref: l.sourceRef })]));
     const allKeys = [...new Set([...keysByRef.values()].flat())];
     const saved: { id: string; score: number; score_priority: string; dedupe_keys: string[]; stage: { name: string } | null }[] = [];
     if (allKeys.length) {

@@ -167,6 +167,7 @@ export function providerLeadToRow(p: ProviderLead, segment?: string | null): New
   return {
     company_name: p.companyName,
     phone: p.phone ?? null,
+    whatsapp: p.whatsapp ?? null,
     website: p.website ?? null,
     instagram: p.instagram ?? null,
     category: p.category ?? null,

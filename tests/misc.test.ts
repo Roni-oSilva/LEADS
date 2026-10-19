@@ -68,3 +68,27 @@ describe("google places mapper", () => {
     expect(l).toMatchObject({ sourceRef: "abc", companyName: "Bella", city: "Campinas", state: "SP", country: "BR", website: null, instagram: "https://instagram.com/bella", reviewsCount: 120 });
   });
 });
+
+import { areaIdFor, buildOverpassQuery, mapElement } from "@/lib/providers/openstreetmap";
+
+describe("openstreetmap provider", () => {
+  it("calcula o id de área do Overpass", () => {
+    expect(areaIdFor("relation", 123)).toBe(3_600_000_123);
+    expect(areaIdFor("way", 5)).toBe(2_400_000_005);
+    expect(areaIdFor("node", 5)).toBeNull();
+  });
+  it("monta consulta por segmento e escapa o termo de busca", () => {
+    const q = buildOverpassQuery(3_600_000_123, "academia", 'x"y');
+    expect(q).toContain("area(3600000123)");
+    expect(q).toContain('"leisure"="fitness_centre"');
+    expect(q).not.toContain('x"y');
+    expect(buildOverpassQuery(1, undefined)).toContain('["shop"]');
+  });
+  it("mapeia tags, ignora sem nome e separa Instagram do site", () => {
+    const ctx = { city: "Campinas", state: "SP", country: "BR" };
+    expect(mapElement({ type: "node", id: 1, tags: { shop: "clothes" } }, ctx)).toBeNull();
+    const l = mapElement({ type: "way", id: 9, tags: { name: "Loja X", shop: "clothes", "contact:phone": "+55 19 3333-4444", "contact:whatsapp": "+55 19 99999-8888", website: "https://instagram.com/lojax", "addr:street": "Rua A", "addr:housenumber": "10" } }, ctx)!;
+    expect(l).toMatchObject({ sourceRef: "osm:way/9", providerKey: "openstreetmap", companyName: "Loja X", phone: "+55 19 3333-4444", whatsapp: "+55 19 99999-8888", website: null, instagram: "https://instagram.com/lojax", city: "Campinas", state: "SP" });
+    expect(l.sourceUrl).toBe("https://www.openstreetmap.org/way/9");
+  });
+});

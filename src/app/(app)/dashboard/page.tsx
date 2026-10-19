@@ -16,7 +16,7 @@ import { formatCurrency, formatPercent } from "@/lib/utils";
 
 export const metadata = { title: "Dashboard" };
 
-const SOURCE_NAMES: Record<string, string> = { google_places: "Google Places", csv_import: "Importação CSV", form: "Formulários", manual: "Cadastro manual" };
+const SOURCE_NAMES: Record<string, string> = { google_places: "Google Places", openstreetmap: "OpenStreetMap", csv_import: "Importação CSV", form: "Formulários", manual: "Cadastro manual" };
 
 export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const ctx = await getContext();
