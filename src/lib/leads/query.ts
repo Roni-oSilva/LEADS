@@ -1,6 +1,5 @@
 import "server-only";
 import type { Ctx } from "../auth";
-import { digitsOnly } from "../utils";
 
 export const PAGE_SIZE = 20;
 export const SORTABLE = ["created_at", "company_name", "score", "city", "follow_up_at"] as const;
@@ -29,12 +28,10 @@ export const LEAD_SELECT = "*, stage:pipeline_stages(id, key, name, position), s
 
 /** Aplica os filtros do CRM a uma query do Supabase (RLS garante o escopo da organização). */
 export function applyLeadFilters<T extends { eq: Function; or: Function; not: Function; is: Function; in: Function }>(query: T, ctx: Pick<Ctx, "orgId">, f: LeadQuery): T {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   let q: any = query.eq("organization_id", ctx.orgId);
   const term = safeTerm(f.q);
   if (term) {
-    const digits = digitsOnly(term);
-    q = q.or([`company_name.ilike.%${term}%`, `contact_name.ilike.%${term}%`, `email.ilike.%${term}%`, `city.ilike.%${term}%`, digits.length >= 4 ? `phone.ilike.%${digits}%` : null].filter(Boolean).join(","));
+    q = q.or([`company_name.ilike.%${term}%`, `contact_name.ilike.%${term}%`, `email.ilike.%${term}%`, `city.ilike.%${term}%`, `phone.ilike.%${term}%`, `whatsapp.ilike.%${term}%`].join(","));
   }
   if (f.stage) q = q.eq("stage_id", f.stage);
   if (f.segment) q = q.eq("segment", f.segment);

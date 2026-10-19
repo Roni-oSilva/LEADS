@@ -63,9 +63,11 @@ function UserBox({ orgName, userName, email, role }: Omit<Props, "children">) {
 
 export function AppShell({ children, ...user }: Props) {
   const pathname = usePathname();
-  const [open, setOpen] = useState(false);
+  // O menu fecha sozinho ao navegar: guardamos a rota em que foi aberto.
+  const [openAt, setOpenAt] = useState<string | null>(null);
+  const open = openAt === pathname;
+  const setOpen = (v: boolean) => setOpenAt(v ? pathname : null);
 
-  useEffect(() => setOpen(false), [pathname]);
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
     return () => { document.body.style.overflow = ""; };

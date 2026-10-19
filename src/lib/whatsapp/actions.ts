@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { audit, requireAdmin, requireWrite, type ActionResult, type Ctx } from "@/lib/auth";
-import { digitsOnly, errorMessage } from "@/lib/utils";
+import { normalizePhone } from "@/lib/dedupe";
+import { errorMessage } from "@/lib/utils";
 import { logActivity, moveLeadToStage, getStages, refreshScore } from "@/lib/leads/service";
 
 async function isBlocked(ctx: Ctx, leadId: string, channel: "whatsapp" | "email" | "phone") {
@@ -11,11 +12,10 @@ async function isBlocked(ctx: Ctx, leadId: string, channel: "whatsapp" | "email"
   if (lead.do_not_contact) return "Este lead pediu para não ser contatado.";
   const { data: pref } = await ctx.supabase.from("contact_preferences").select("allow_whatsapp, allow_email, allow_phone").eq("lead_id", leadId).maybeSingle();
   if (pref && pref[`allow_${channel}` as "allow_whatsapp"] === false) return "O contato desativou este canal de comunicação.";
-  const phone = digitsOnly(lead.whatsapp || lead.phone);
-  const { data: sup } = await ctx.supabase.from("suppression_list").select("id").eq("organization_id", ctx.orgId).or(
-    [phone && `and(kind.eq.phone,value.eq.${phone})`, lead.email && `and(kind.eq.email,value.eq.${String(lead.email).toLowerCase().replace(/[(),]/g, "")})`].filter(Boolean).join(",") || "id.is.null",
-  ).limit(1);
-  if (sup?.length) return "Este contato está na lista de supressão (não contatar).";
+  const phones = [normalizePhone(lead.whatsapp), normalizePhone(lead.phone)].filter((v): v is string => !!v);
+  const email = lead.email ? String(lead.email).toLowerCase() : null;
+  const { data: sup } = await ctx.supabase.from("suppression_list").select("kind, value").eq("organization_id", ctx.orgId).in("value", [...phones, ...(email ? [email] : [])]);
+  if ((sup ?? []).some((s) => (s.kind === "phone" && phones.includes(s.value)) || (s.kind === "email" && s.value === email))) return "Este contato está na lista de supressão (não contatar).";
   return null;
 }
 

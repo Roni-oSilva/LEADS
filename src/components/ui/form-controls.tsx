@@ -25,16 +25,31 @@ export function Label({ className, ...p }: React.LabelHTMLAttributes<HTMLLabelEl
   return <label className={cn("mb-1.5 block text-xs font-medium text-muted-foreground", className)} {...p} />;
 }
 
+const CONTROLS: unknown[] = [];
+
+/** Rótulo + controle + dica/erro, com `htmlFor`/`id` e `aria-describedby` associados automaticamente. */
 export function Field({ label, error, hint, children, className }: { label: string; error?: string; hint?: string; children: React.ReactNode; className?: string }) {
+  const id = React.useId();
+  const isControl = React.isValidElement(children) && CONTROLS.includes(children.type);
+  const describedBy = error ? `${id}-error` : hint ? `${id}-hint` : undefined;
+  const control = isControl
+    ? React.cloneElement(children as React.ReactElement<Record<string, unknown>>, {
+        id: (children as React.ReactElement<{ id?: string }>).props.id ?? id,
+        "aria-invalid": error ? true : undefined,
+        "aria-describedby": describedBy,
+      })
+    : children;
+  const targetId = isControl ? ((children as React.ReactElement<{ id?: string }>).props.id ?? id) : undefined;
   return (
     <div className={className}>
-      <Label>{label}</Label>
-      {children}
-      {hint && !error && <p className="mt-1 text-xs text-muted-foreground">{hint}</p>}
-      {error && <p role="alert" className="mt-1 text-xs text-danger">{error}</p>}
+      <Label htmlFor={targetId}>{label}</Label>
+      {control}
+      {hint && !error && <p id={`${id}-hint`} className="mt-1 text-xs text-muted-foreground">{hint}</p>}
+      {error && <p id={`${id}-error`} role="alert" className="mt-1 text-xs text-danger">{error}</p>}
     </div>
   );
 }
+CONTROLS.push(Input, Textarea, Select);
 
 export const Checkbox = React.forwardRef<HTMLInputElement, React.InputHTMLAttributes<HTMLInputElement>>(({ className, ...p }, ref) => (
   <input ref={ref} type="checkbox" className={cn("h-4 w-4 cursor-pointer rounded border-border bg-muted accent-[#7c6cf6]", className)} {...p} />

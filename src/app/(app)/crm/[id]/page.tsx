@@ -11,6 +11,7 @@ import { canWrite, getContext } from "@/lib/auth";
 import { ACTIVITY_LABEL, PRIORITY_LABEL, segmentLabel, serviceLabel } from "@/lib/constants";
 import { SCORE_DISCLAIMER, type BreakdownItem } from "@/lib/scoring";
 import { getStages } from "@/lib/leads/service";
+import { normalizePhone } from "@/lib/dedupe";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/whatsapp/link";
 import type { Evidence } from "@/lib/types";
@@ -42,8 +43,8 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
   const evidence = (evRes.data ?? []) as Evidence[];
   const breakdown = (lead.score_breakdown ?? []) as BreakdownItem[];
   const prefs = prefRes.data ?? { allow_whatsapp: true, allow_email: true, allow_phone: true };
-  const digits = (lead.whatsapp || lead.phone || "").replace(/\D/g, "");
-  const suppressed = (supRes.data ?? []).some((s) => (s.kind === "phone" && s.value === digits) || (s.kind === "email" && lead.email && s.value === String(lead.email).toLowerCase()));
+  const phones = [normalizePhone(lead.whatsapp), normalizePhone(lead.phone)].filter((v): v is string => !!v);
+  const suppressed = (supRes.data ?? []).some((s) => (s.kind === "phone" && phones.includes(s.value)) || (s.kind === "email" && lead.email && s.value === String(lead.email).toLowerCase()));
   const blocked = lead.do_not_contact ? "Lead marcado como não contatar" : suppressed ? "Contato na lista de supressão" : !prefs.allow_whatsapp ? "Contato desativou o WhatsApp" : null;
   const write = canWrite(ctx.role);
   const template = (ctx.orgSettings.whatsapp_template as string) || DEFAULT_WHATSAPP_TEMPLATE;

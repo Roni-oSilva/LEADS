@@ -1,14 +1,22 @@
 import "server-only";
-import { computeDedupeKeys } from "../dedupe";
-import type { Ctx } from "../auth";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { computeDedupeKeys, normalizePhone } from "../dedupe";
+import type { Role } from "../auth";
 import { analyzeOpportunities } from "../opportunities/analyze";
 import { checkWebsite } from "../opportunities/check-website";
 import { DEFAULT_CONFIG, normalizeWeights, scoreLead, type ScoringConfig } from "../scoring";
 import type { ProviderLead } from "../providers/types";
 import type { Stage } from "../types";
 
-type Db = Ctx["supabase"];
-type Actor = Pick<Ctx, "supabase" | "orgId" | "userId" | "role" | "orgSettings">;
+type Db = SupabaseClient<any, any, any>;
+/** Quem executa a operação. `userId` é null em fluxos públicos (formulários), que usam o cliente de serviço. */
+export interface Actor {
+  supabase: Db;
+  orgId: string;
+  userId: string | null;
+  role: Role;
+  orgSettings: Record<string, unknown>;
+}
 
 export async function getStages(db: Db, orgId: string): Promise<Stage[]> {
   const { data, error } = await db.from("pipeline_stages").select("*").eq("organization_id", orgId).order("position");
@@ -43,15 +51,16 @@ export async function logActivity(a: Pick<Actor, "supabase" | "orgId" | "userId"
 export async function refreshScore(a: Actor, leadId: string) {
   const { data: lead, error } = await a.supabase.from("leads").select("*, source:lead_sources(key)").eq("id", leadId).single();
   if (error || !lead) throw error ?? new Error("Lead não encontrado");
-  const [{ data: evidence }, { count: responses }] = await Promise.all([
+  const [{ data: evidence }, { count: responses }, { count: formSubmissions }] = await Promise.all([
     a.supabase.from("lead_evidence").select("confidence, verified").eq("lead_id", leadId),
     a.supabase.from("lead_activities").select("id", { count: "exact", head: true }).eq("lead_id", leadId).eq("type", "whatsapp_response"),
+    a.supabase.from("lead_activities").select("id", { count: "exact", head: true }).eq("lead_id", leadId).contains("metadata", { kind: "form_submission" }),
   ]);
   const result = scoreLead(
     {
       segment: lead.segment, state: lead.state, city: lead.city, phone: lead.phone, whatsapp: lead.whatsapp, email: lead.email,
       do_not_contact: lead.do_not_contact, data_updated_at: lead.data_updated_at,
-      showed_interest: (lead.source as { key?: string } | null)?.key === "form" || (responses ?? 0) > 0,
+      showed_interest: (lead.source as { key?: string } | null)?.key === "form" || (responses ?? 0) > 0 || (formSubmissions ?? 0) > 0,
       evidence: (evidence ?? []) as { confidence: "low" | "medium" | "high"; verified: boolean }[],
     },
     scoringConfigFrom(a.orgSettings),
@@ -196,9 +205,10 @@ export async function moveLeadToStage(a: Actor, leadId: string, stageId: string)
 
   await logActivity(a, leadId, "stage_change", `Etapa alterada: ${from?.name ?? "—"} → ${target.name}`, { from: from?.key, to: target.key });
   if (target.is_suppressed) {
-    const entries: { organization_id: string; kind: string; value: string; reason: string; created_by: string }[] = [];
-    const phone = (lead.whatsapp || lead.phone || "").replace(/\D/g, "");
-    if (phone) entries.push({ organization_id: a.orgId, kind: "phone", value: phone, reason: "Lead movido para Não contatar", created_by: a.userId });
+    const entries: { organization_id: string; kind: string; value: string; reason: string; created_by: string | null }[] = [];
+    for (const phone of new Set([normalizePhone(lead.whatsapp), normalizePhone(lead.phone)].filter((v): v is string => !!v))) {
+      entries.push({ organization_id: a.orgId, kind: "phone", value: phone, reason: "Lead movido para Não contatar", created_by: a.userId });
+    }
     if (lead.email) entries.push({ organization_id: a.orgId, kind: "email", value: String(lead.email).toLowerCase(), reason: "Lead movido para Não contatar", created_by: a.userId });
     if (entries.length) await a.supabase.from("suppression_list").upsert(entries, { onConflict: "organization_id,kind,value", ignoreDuplicates: true });
     await logActivity(a, leadId, "opt_out", "Lead marcado como não contatar; contatos adicionados à lista de supressão.");
