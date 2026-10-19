@@ -6,6 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Instagram } from "@/components/ui/icons";
 import { Alert, EmptyState, ScoreBadge } from "@/components/ui/misc";
 import { AnalyzeButtons, ContactLog, DeleteLeadButton, EditLeadButton, FollowUpForm, NoteForm, PrivacyForm, StageSelect } from "@/components/crm/detail-panels";
+import { CnpjPanel } from "@/components/crm/cnpj-panel";
 import { WhatsAppButton } from "@/components/crm/whatsapp-button";
 import { canWrite, getContext } from "@/lib/auth";
 import { ACTIVITY_LABEL, PRIORITY_LABEL, segmentLabel, serviceLabel } from "@/lib/constants";
@@ -164,6 +165,7 @@ export default async function LeadDetail({ params }: { params: Promise<{ id: str
           <Card><CardHeader><CardTitle>Próxima ação e retorno</CardTitle></CardHeader><CardContent><FollowUpForm leadId={id} nextAction={lead.next_action} followUpAt={lead.follow_up_at} disabled={!write} />
             {(tasksRes.data ?? []).length > 0 && <ul className="mt-4 space-y-1 border-t border-border pt-3 text-xs">{(tasksRes.data ?? []).map((t) => <li key={t.id} className={t.done_at ? "text-muted-foreground line-through" : ""}>{t.title} · {formatDate(t.due_at)}</li>)}</ul>}
           </CardContent></Card>
+          <Card><CardHeader><CardTitle>Dados do CNPJ</CardTitle></CardHeader><CardContent><CnpjPanel leadId={id} cnpj={lead.cnpj} disabled={!write} /></CardContent></Card>
           <Card><CardHeader><CardTitle>Observações</CardTitle></CardHeader><CardContent className="space-y-4"><NoteForm leadId={id} disabled={!write} />
             {(notesRes.data ?? []).map((n) => <div key={n.id} className="rounded-lg bg-muted/50 p-3 text-sm"><p className="whitespace-pre-wrap">{n.body}</p><p className="mt-1 text-[11px] text-muted-foreground">{nameOf(n.user_id)} · {formatDate(n.created_at, true)}</p></div>)}
           </CardContent></Card>

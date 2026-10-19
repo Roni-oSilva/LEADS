@@ -16,6 +16,7 @@ export interface Lead {
   phone: string | null;
   whatsapp: string | null;
   email: string | null;
+  cnpj: string | null;
   website: string | null;
   instagram: string | null;
   socials: Record<string, string>;

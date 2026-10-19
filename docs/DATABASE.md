@@ -7,6 +7,7 @@
 | `0001_schema.sql` | tipos, 25 tabelas, chaves, restrições (`check`), índices (incl. GIN em `dedupe_keys` e trigram em `company_name`) |
 | `0002_functions.sql` | `updated_at`, `seed_pipeline_stages`, helpers de RLS, `handle_new_user`, `rate_limit_hit` |
 | `0003_rls.sql` | RLS habilitado em **todas** as tabelas + políticas por papel |
+| `0004_cnpj.sql` | coluna `leads.cnpj` |
 
 Aplicação: SQL Editor (em ordem) ou `supabase db push`. Para novas mudanças crie `0004_*.sql`, `0005_*.sql`… (nunca edite migrações já aplicadas em produção).
 

@@ -1,5 +1,5 @@
 import "server-only";
-import { SEGMENTS } from "../constants";
+import { SEGMENTS } from "../segments";
 import { ProviderNotConfiguredError, ProviderRequestError, type LeadProvider, type ProviderLead, type SearchParams } from "./types";
 
 const ENDPOINT = "https://places.googleapis.com/v1/places:searchText";
@@ -76,9 +76,9 @@ export function mapPlace(place: Place, fetchedAt = new Date().toISOString()): Pr
   };
 }
 
-function buildQuery(p: SearchParams) {
-  const seg = SEGMENTS.find((s) => s.value === p.segment)?.query;
-  const where = [p.neighborhood, p.city, p.state, p.country].filter(Boolean).join(", ");
+function buildQuery(p: SearchParams, segmentValue: string | undefined, city: string | undefined) {
+  const seg = SEGMENTS.find((s) => s.value === segmentValue)?.query;
+  const where = [city, p.state, p.country].filter(Boolean).join(", ");
   return [p.query || seg, where && `em ${where}`].filter(Boolean).join(" ");
 }
 
@@ -101,31 +101,41 @@ export const googlePlaces: LeadProvider = {
   async search(params) {
     const key = process.env.GOOGLE_PLACES_API_KEY;
     if (!key) throw new ProviderNotConfiguredError(this.name, ["GOOGLE_PLACES_API_KEY"]);
-    const textQuery = buildQuery(params);
-    if (!textQuery.trim()) throw new ProviderRequestError(this.name, "Informe um segmento, termo de busca ou localização.");
-    const res = await fetch(ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": FIELD_MASK },
-      body: JSON.stringify({
-        textQuery,
-        languageCode: "pt-BR",
-        regionCode: (params.country ?? "BR").slice(0, 2).toUpperCase(),
-        pageSize: Math.min(params.limit ?? 20, 20),
-        ...(params.pageToken ? { pageToken: params.pageToken } : {}),
-      }),
-      signal: AbortSignal.timeout(15000),
-    });
-    if (!res.ok) {
-      const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
-      throw new ProviderRequestError(this.name, body?.error?.message ?? `Google Places respondeu HTTP ${res.status}.`, res.status);
-    }
-    const data = (await res.json()) as { places?: Place[]; nextPageToken?: string };
+    const segs = (params.segments ?? []).slice(0, 3);
+    const cities = (params.cities ?? []).slice(0, 2);
+    const combos = (segs.length ? segs : [undefined]).flatMap((sg) => (cities.length ? cities : [undefined]).map((c) => ({ sg, c })));
     const fetchedAt = new Date().toISOString();
-    return { leads: (data.places ?? []).map((p) => mapPlace(p, fetchedAt)), nextPageToken: data.nextPageToken ?? null };
+    const seen = new Set<string>();
+    const leads: ProviderLead[] = [];
+    let next: string | null = null;
+    for (const { sg, c } of combos) {
+      const textQuery = buildQuery(params, sg, c);
+      if (!textQuery.trim()) throw new ProviderRequestError(this.name, "Informe um nicho, termo de busca ou localização.");
+      const res = await fetch(ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key, "X-Goog-FieldMask": FIELD_MASK },
+        body: JSON.stringify({
+          textQuery, languageCode: "pt-BR", regionCode: (params.country ?? "BR").slice(0, 2).toUpperCase(), pageSize: 20,
+          ...(params.pageToken && combos.length === 1 ? { pageToken: params.pageToken } : {}),
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => null)) as { error?: { message?: string } } | null;
+        throw new ProviderRequestError(this.name, body?.error?.message ?? `Google Places respondeu HTTP ${res.status}.`, res.status);
+      }
+      const data = (await res.json()) as { places?: Place[]; nextPageToken?: string };
+      for (const p of data.places ?? []) {
+        const lead = { ...mapPlace(p, fetchedAt), segment: sg ?? null };
+        if (!seen.has(lead.sourceRef)) { seen.add(lead.sourceRef); leads.push(lead); }
+      }
+      if (combos.length === 1) next = data.nextPageToken ?? null;
+    }
+    return { leads, nextPageToken: next };
   },
   async test() {
     try {
-      await this.search({ query: "padaria São Paulo", limit: 1 });
+      await this.search({ query: "padaria", cities: ["São Paulo"] });
       return { ok: true, message: "Conexão com a Google Places API funcionando." };
     } catch (e) {
       return { ok: false, message: e instanceof Error ? e.message : "Falha ao testar a Google Places API." };

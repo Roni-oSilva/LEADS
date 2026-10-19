@@ -12,7 +12,7 @@ import { Checkbox, Select } from "@/components/ui/form-controls";
 import { ScoreBadge } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { WhatsAppButton } from "./whatsapp-button";
-import { segmentLabel } from "@/lib/constants";
+import { segmentLabel } from "@/lib/segments";
 import { formatDate } from "@/lib/utils";
 import { analyzeLeadsAction, deleteLeadsAction, moveStageAction, toggleFavoriteAction } from "@/lib/leads/actions";
 
@@ -82,6 +82,7 @@ export function LeadsTable({ rows, stages, template, canWrite, sortLinks }: { ro
           <button className="ml-auto text-xs text-muted-foreground hover:text-foreground" onClick={() => setSelected(new Set())}>Limpar seleção</button>
         </div>
       )}
+      <div className="hidden md:block">
       <Table>
         <THead>
           <TR>
@@ -137,6 +138,36 @@ export function LeadsTable({ rows, stages, template, canWrite, sortLinks }: { ro
           })}
         </TBody>
       </Table>
+      </div>
+
+      {/* Cartões (celular) */}
+      <ul className="divide-y divide-border md:hidden">
+        {rows.map((r) => {
+          const phone = r.whatsapp || r.phone;
+          return (
+            <li key={r.id} className="space-y-2.5 p-4">
+              <div className="flex items-start gap-3">
+                <Checkbox className="mt-1" aria-label={`Selecionar ${r.company_name}`} checked={selected.has(r.id)} onChange={() => toggle(r.id)} />
+                <div className="min-w-0 flex-1">
+                  <Link href={`/crm/${r.id}`} className="font-medium leading-tight">{r.company_name}</Link>
+                  <p className="mt-0.5 text-xs text-muted-foreground">{[segmentLabel(r.segment) !== "—" ? segmentLabel(r.segment) : null, [r.city, r.state].filter(Boolean).join("/")].filter(Boolean).join(" · ")}</p>
+                </div>
+                <ScoreBadge score={r.score} priority={r.score_priority} />
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 pl-7 text-xs text-muted-foreground">
+                <span>{phone || "Sem telefone"}</span>
+                {r.stage && <Badge variant={STAGE_VARIANT[r.stage.key] ?? "default"}>{r.stage.name}</Badge>}
+                <span>{formatDate(r.discovered_at)}</span>
+              </div>
+              <div className="-ml-1 flex items-center pl-7">
+                {canWrite && <button aria-label={r.favorite ? "Remover dos favoritos" : "Adicionar aos favoritos"} onClick={() => run(() => toggleFavoriteAction(r.id, !r.favorite), r.favorite ? "Removido dos favoritos." : "Adicionado aos favoritos.")} className="rounded-md p-2 text-muted-foreground hover:bg-muted"><Star className={r.favorite ? "h-4 w-4 fill-warning text-warning" : "h-4 w-4"} /></button>}
+                <WhatsAppButton leadId={r.id} company={r.company_name} contact={r.contact_name} phone={phone} template={template} blockedReason={r.do_not_contact ? "Lead marcado como não contatar" : null} />
+                <Link href={`/crm/${r.id}`} aria-label="Ver detalhes" className="rounded-md p-2 text-muted-foreground hover:bg-muted hover:text-foreground"><ExternalLink className="h-4 w-4" /></Link>
+              </div>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

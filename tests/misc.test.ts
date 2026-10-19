@@ -78,11 +78,14 @@ describe("openstreetmap provider", () => {
     expect(areaIdFor("node", 5)).toBeNull();
   });
   it("monta consulta por segmento e escapa o termo de busca", () => {
-    const q = buildOverpassQuery(3_600_000_123, "academia", 'x"y');
+    const q = buildOverpassQuery(3_600_000_123, ["academia"], 'x"y');
     expect(q).toContain("area(3600000123)");
     expect(q).toContain('"leisure"="fitness_centre"');
     expect(q).not.toContain('x"y');
     expect(buildOverpassQuery(1, undefined)).toContain('["shop"]');
+    const multi = buildOverpassQuery(1, ["pizzaria", "borracharia_pneus"]);
+    expect(multi).toContain('"cuisine"="pizza"');
+    expect(multi).toContain('"shop"="tyres"');
   });
   it("mapeia tags, ignora sem nome e separa Instagram do site", () => {
     const ctx = { city: "Campinas", state: "SP", country: "BR" };
@@ -90,5 +93,35 @@ describe("openstreetmap provider", () => {
     const l = mapElement({ type: "way", id: 9, tags: { name: "Loja X", shop: "clothes", "contact:phone": "+55 19 3333-4444", "contact:whatsapp": "+55 19 99999-8888", website: "https://instagram.com/lojax", "addr:street": "Rua A", "addr:housenumber": "10" } }, ctx)!;
     expect(l).toMatchObject({ sourceRef: "osm:way/9", providerKey: "openstreetmap", companyName: "Loja X", phone: "+55 19 3333-4444", whatsapp: "+55 19 99999-8888", website: null, instagram: "https://instagram.com/lojax", city: "Campinas", state: "SP" });
     expect(l.sourceUrl).toBe("https://www.openstreetmap.org/way/9");
+  });
+});
+
+import { classifySegment, matchesFilter, parseFilter } from "@/lib/providers/osm-filters";
+import { SEGMENTS, SEGMENT_GROUPS } from "@/lib/segments";
+
+describe("nichos e filtros OSM", () => {
+  it("tem muitos nichos, valores únicos e todos com filtro OSM e termo de busca", () => {
+    expect(SEGMENTS.length).toBeGreaterThanOrEqual(60);
+    expect(new Set(SEGMENTS.map((s) => s.value)).size).toBe(SEGMENTS.length);
+    expect(SEGMENTS.every((s) => s.osm.length > 0 && s.query && s.label && s.group)).toBe(true);
+    expect(SEGMENT_GROUPS).toContain("Automotivo");
+    for (const v of ["oficina_mecanica", "auto_eletrica", "funilaria_pintura", "borracharia_pneus", "lava_jato", "autopecas"]) expect(SEGMENTS.some((s) => s.value === v)).toBe(true);
+  });
+  it("todos os filtros são parseáveis pelo avaliador", () => {
+    for (const s of SEGMENTS) for (const f of s.osm) expect(parseFilter(f).length, `${s.value}: ${f}`).toBeGreaterThan(0);
+  });
+  it("avalia =, ~, ~,i e existência de chave", () => {
+    expect(matchesFilter({ shop: "tyres" }, '["shop"="tyres"]')).toBe(true);
+    expect(matchesFilter({ shop: "car_repair", name: "Auto Elétrica Silva" }, '["shop"="car_repair"]["name"~"el[eé]tric",i]')).toBe(true);
+    expect(matchesFilter({ shop: "car_repair", name: "Mecânica Silva" }, '["shop"="car_repair"]["name"~"el[eé]tric",i]')).toBe(false);
+    expect(matchesFilter({ amenity: "bar" }, '["amenity"~"^(bar|pub)$"]')).toBe(true);
+    expect(matchesFilter({ office: "x" }, '["office"]')).toBe(true);
+    expect(matchesFilter({}, '["office"]')).toBe(false);
+  });
+  it("classifica o resultado no primeiro nicho que casa", () => {
+    const chosen = SEGMENTS.filter((s) => ["auto_eletrica", "oficina_mecanica", "borracharia_pneus"].includes(s.value));
+    expect(classifySegment({ shop: "car_repair", name: "Auto Elétrica Zé" }, chosen)).toBe("oficina_mecanica".length ? chosen[0].value : "");
+    expect(classifySegment({ shop: "tyres" }, chosen)).toBe("borracharia_pneus");
+    expect(classifySegment({ shop: "bakery" }, chosen)).toBeNull();
   });
 });

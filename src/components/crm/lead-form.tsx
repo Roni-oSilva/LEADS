@@ -1,5 +1,6 @@
 "use client";
 
+import { SegmentOptions } from "@/components/ui/segment-options";
 import { useState, useTransition } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -7,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select } from "@/components/ui/form-controls";
 import { Alert } from "@/components/ui/misc";
-import { SEGMENTS, UF_LIST } from "@/lib/constants";
+import { UF_LIST } from "@/lib/constants";
 import { leadInputSchema, type LeadInput } from "@/lib/leads/schema";
 import { createLeadAction, updateLeadAction } from "@/lib/leads/actions";
 
@@ -45,7 +46,7 @@ export function LeadForm({ leadId, initial, members, onDone }: { leadId?: string
       <Field label="Site" error={errors.website?.message}><Input placeholder="https://" {...register("website")} /></Field>
       <Field label="Instagram" error={errors.instagram?.message}><Input placeholder="https://instagram.com/..." {...register("instagram")} /></Field>
       <Field label="Segmento" error={errors.segment?.message}>
-        <Select {...register("segment")}><option value="">—</option>{SEGMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</Select>
+        <Select {...register("segment")}><option value="">—</option><SegmentOptions /></Select>
       </Field>
       <Field label="Categoria" error={errors.category?.message}><Input {...register("category")} /></Field>
       <Field label="Estado" error={errors.state?.message}>

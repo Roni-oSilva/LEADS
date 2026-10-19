@@ -27,13 +27,13 @@ export async function searchLeadsAction(input: SearchInput): Promise<ActionResul
     if (!status.configured) return { ok: false, error: `A fonte “${provider.name}” ainda não está conectada.`, notConfigured: { provider: provider.name, missing: status.missing, instructions: status.instructions } };
 
     const res = await provider.search({
-      query: [input.name, input.category].filter(Boolean).join(" ") || undefined,
-      segment: input.segment, country: input.country || "BR", state: input.state, city: input.city, neighborhood: input.neighborhood,
+      query: input.name || undefined,
+      segments: input.segments, country: input.country || "BR", state: input.state, cities: input.cities,
       pageToken: input.pageToken ?? undefined,
     });
 
     // Marca o que já está salvo na base (deduplicação) usando as chaves de cada resultado.
-    const keysByRef = new Map(res.leads.map((l) => [l.sourceRef, computeDedupeKeys({ company_name: l.companyName, city: l.city, phone: l.phone, whatsapp: l.whatsapp, website: l.website, source_key: l.providerKey, source_ref: l.sourceRef })]));
+    const keysByRef = new Map(res.leads.map((l) => [l.sourceRef, computeDedupeKeys({ company_name: l.companyName, city: l.city, phone: l.phone, whatsapp: l.whatsapp, email: l.email, website: l.website, source_key: l.providerKey, source_ref: l.sourceRef })]));
     const allKeys = [...new Set([...keysByRef.values()].flat())];
     const saved: { id: string; score: number; score_priority: string; dedupe_keys: string[]; stage: { name: string } | null }[] = [];
     if (allKeys.length) {
@@ -58,13 +58,14 @@ async function searchInternal(ctx: Awaited<ReturnType<typeof getContext>>, input
   const page = Math.max(0, Number(input.pageToken) || 0);
   const base = ctx.supabase.from("leads").select("*, stage:pipeline_stages(name)");
   const filtered = applyLeadFilters(base, ctx, {
-    q: safeTerm(input.name ?? ""), stage: undefined, segment: input.segment || undefined, state: input.state || undefined, city: input.city || undefined,
+    q: safeTerm(input.name ?? ""), stage: undefined, segment: undefined, state: input.state || undefined, city: undefined,
     owner: undefined, priority: undefined, source: undefined, fav: false, site: input.site || undefined, insta: input.insta || undefined, wa: input.wa || undefined,
     sort: "created_at", dir: "desc", page: 1,
   });
   let q = filtered;
-  if (input.neighborhood) q = q.ilike("neighborhood", `%${safeTerm(input.neighborhood)}%`);
-  if (input.category) q = q.ilike("category", `%${safeTerm(input.category)}%`);
+  if (input.segments?.length) q = q.in("segment", input.segments);
+  if (input.cities?.length) q = q.in("city", input.cities);
+  if (input.email === "yes") q = q.not("email", "is", null);
   if (input.country) q = q.eq("country", input.country);
   if (input.minRating) q = q.gte("rating", input.minRating);
   if (input.minReviews) q = q.gte("reviews_count", input.minReviews);
@@ -75,7 +76,7 @@ async function searchInternal(ctx: Awaited<ReturnType<typeof getContext>>, input
   const more = rows.length > PAGE;
   const results: ResultRow[] = rows.slice(0, PAGE).map((r) => ({
     sourceRef: String(r.id), providerKey: "internal", companyName: String(r.company_name), category: (r.category as string) ?? null, phone: (r.phone as string) ?? null,
-    whatsapp: (r.whatsapp as string) ?? null, website: (r.website as string) ?? null, instagram: (r.instagram as string) ?? null, address: (r.address as string) ?? null,
+    whatsapp: (r.whatsapp as string) ?? null, email: (r.email as string) ?? null, segment: (r.segment as string) ?? null, website: (r.website as string) ?? null, instagram: (r.instagram as string) ?? null, address: (r.address as string) ?? null,
     neighborhood: (r.neighborhood as string) ?? null, city: (r.city as string) ?? null, state: (r.state as string) ?? null, country: (r.country as string) ?? null,
     rating: r.rating === null ? null : Number(r.rating), reviewsCount: (r.reviews_count as number) ?? null, sourceUrl: (r.source_url as string) ?? null,
     fetchedAt: String(r.data_updated_at), savedLeadId: String(r.id), score: Number(r.score), scorePriority: String(r.score_priority),

@@ -1,5 +1,6 @@
 "use client";
 
+import { SegmentOptions } from "@/components/ui/segment-options";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ListPlus, Pencil, Plus, Trash2, Wand2 } from "lucide-react";
@@ -7,7 +8,7 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { Field, Input, Select, Textarea } from "@/components/ui/form-controls";
-import { SEGMENTS, UF_LIST } from "@/lib/constants";
+import { UF_LIST } from "@/lib/constants";
 import { addLeadsToCampaignAction, deleteCampaignAction, generateCampaignTasksAction, removeLeadFromCampaignAction, saveCampaignAction, setCampaignStatusAction } from "@/lib/campaigns/actions";
 
 export interface CampaignInitial {
@@ -35,7 +36,7 @@ export function CampaignFormButton({ initial }: { initial?: CampaignInitial }) {
         }}>
           <Field label="Nome *" className="sm:col-span-2"><Input name="name" required defaultValue={initial?.name} maxLength={120} /></Field>
           <Field label="Objetivo" className="sm:col-span-2"><Textarea name="objective" rows={2} defaultValue={initial?.objective ?? ""} maxLength={500} /></Field>
-          <Field label="Segmento-alvo"><Select name="target_segment" defaultValue={initial?.target_segment ?? ""}><option value="">Todos</option>{SEGMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</Select></Field>
+          <Field label="Segmento-alvo"><Select name="target_segment" defaultValue={initial?.target_segment ?? ""}><option value="">Todos</option><SegmentOptions /></Select></Field>
           <Field label="Origem dos leads"><Select name="source_key" defaultValue={initial?.source_key ?? ""}><option value="">Qualquer</option><option value="google_places">Google Places</option><option value="csv_import">Importação CSV</option><option value="form">Formulários</option><option value="manual">Manual</option></Select></Field>
           <Field label="Início"><Input type="date" name="starts_at" defaultValue={initial?.starts_at ?? ""} /></Field>
           <Field label="Encerramento"><Input type="date" name="ends_at" defaultValue={initial?.ends_at ?? ""} /></Field>
@@ -73,7 +74,7 @@ export function AddLeadsForm({ campaignId, stages }: { campaignId: string; stage
         toast.success(`${r.data!.added} lead(s) associado(s) (leads “não contatar” são ignorados).`); router.refresh();
       });
     }}>
-      <Field label="Segmento"><Select name="segment" defaultValue=""><option value="">Todos</option>{SEGMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</Select></Field>
+      <Field label="Segmento"><Select name="segment" defaultValue=""><option value="">Todos</option><SegmentOptions /></Select></Field>
       <Field label="Estado"><Select name="state" defaultValue=""><option value="">Todos</option>{UF_LIST.map((u) => <option key={u}>{u}</option>)}</Select></Field>
       <Field label="Cidade"><Input name="city" /></Field>
       <Field label="Pontuação mínima"><Input name="minScore" type="number" min={0} max={100} placeholder="0" /></Field>

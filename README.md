@@ -34,6 +34,7 @@ Aplique as migrações **em ordem** — pelo SQL Editor do Supabase ou pela CLI:
 supabase/migrations/0001_schema.sql      # tabelas, tipos, índices, restrições
 supabase/migrations/0002_functions.sql   # triggers, funções, provisionamento de usuário, rate limit
 supabase/migrations/0003_rls.sql         # políticas Row Level Security
+supabase/migrations/0004_cnpj.sql        # coluna cnpj (completar dados pela consulta pública)
 
 # ou, com a CLI do Supabase
 supabase link --project-ref SEU_REF && supabase db push
@@ -80,7 +81,7 @@ Crie sua conta em `/signup`: o trigger do banco cria a sua organização, o funi
 
 ### Testes
 
-- **`npm test`** — 30 testes: pontuação explicável, deduplicação, links `wa.me`, CSV (mapeamento, validação, injeção de fórmulas),
+- **`npm test`** — 43 testes: pontuação explicável, deduplicação, links `wa.me`, CSV (mapeamento, validação, injeção de fórmulas),
   agregações do dashboard, SSRF, analisador de oportunidades, validação de formulários e mapeamento do Google Places.
 - **`supabase/tests/run.sh`** — exige um Postgres 14+ acessível (`PGHOST`, `PGPORT`, `PGUSER`). Cria um banco temporário, simula o
   schema `auth` do Supabase, aplica as migrações e valida: isolamento entre organizações, papéis (owner/viewer), convites,
@@ -90,7 +91,7 @@ Crie sua conta em `/signup`: o trigger do banco cria a sua organização, o funi
 
 ## Fluxo principal
 
-1. **Encontrar Leads** → escolha fonte, segmento e localização → pesquisa em fonte *configurada* (ou na sua própria base).
+1. **Encontrar Leads** → escolha fonte, um ou vários nichos (60+, agrupados: automotivo com várias especialidades de oficina, alimentação, saúde, beleza, comércio, serviços…) e estado + cidades → pesquisa em fonte *configurada* (ou na sua própria base).
 2. Veja a pontuação estimada e as oportunidades → **Salvar** (duplicidades são evitadas por telefone, domínio, e-mail e nome+cidade).
 3. **Meu CRM** / **Funil** → acompanhe a qualificação, mova entre etapas (Kanban ou tabela), registre observações.
 4. **WhatsApp** → mensagem personalizável via link oficial `wa.me`; o sistema registra que *você iniciou* a conversa.
@@ -127,7 +128,9 @@ supabase/
 
 | Integração | Credencial | Observações |
 |---|---|---|
-| **OpenStreetMap (Nominatim + Overpass)** | nenhuma | Gratuito, sem chave; uso comercial permitido com atribuição (ODbL). Exige a cidade na pesquisa. Cobertura de telefone/site varia por região. |
+| **OpenStreetMap (Nominatim + Overpass)** | nenhuma | Gratuito, sem chave; uso comercial permitido com atribuição (ODbL). Vários nichos (60+) e até 5 cidades por pesquisa; traz telefone, WhatsApp, e-mail, site e Instagram quando mapeados (resultados com mais contatos aparecem primeiro). Cobertura varia por região. |
+| **Colar lista** | nenhuma | Cole uma empresa por linha (nome; telefone; cidade/UF; e-mail; site; @instagram) — reconhecimento automático e deduplicação. |
+| **Completar pelo CNPJ (BrasilAPI)** | nenhuma | Preenche telefone, e-mail e endereço *vazios* a partir de dados públicos da Receita; descarta o quadro societário. |
 | **Google Places API (New)** | `GOOGLE_PLACES_API_KEY` | Text Search. Respeite os Termos da Google Maps Platform (restrições de armazenamento/uso do conteúdo); o app exibe esse aviso na pesquisa. Os resultados só são gravados quando o usuário salva. |
 | **Importação CSV** | — | Mapeamento, validação, prévia, deduplicação, relatório de erros e confirmação de base legítima. |
 | **Formulários próprios** | `SUPABASE_SERVICE_ROLE_KEY` | Link público e `<script src=".../embed.js" data-leadfinder-form="slug">`. |

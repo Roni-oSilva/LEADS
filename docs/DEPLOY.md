@@ -3,7 +3,7 @@
 ## 1. Supabase
 
 1. Crie um projeto em <https://supabase.com> (região próxima dos usuários, ex.: São Paulo).
-2. Rode as migrações de `supabase/migrations` **em ordem** (SQL Editor ou `supabase db push`).
+2. Rode as migrações de `supabase/migrations` (0001 a 0004) **em ordem** (SQL Editor ou `supabase db push`).
 3. **Authentication → Providers → Email:** mantenha “Confirm email” ativo.
 4. **Authentication → URL Configuration:** *Site URL* = URL de produção; *Redirect URLs* = `https://SEU-DOMINIO/auth/callback`.
 5. **Settings → API:** copie *Project URL*, *anon key* e *service_role key*.
@@ -47,7 +47,7 @@
 
 ## 5. Checklist de produção
 
-- [ ] Migrações 0001–0003 aplicadas; `supabase/tests/run.sh` passando em um banco de teste
+- [ ] Migrações 0001–0004 aplicadas; `supabase/tests/run.sh` passando em um banco de teste
 - [ ] “Confirm email” ativo e SMTP configurado
 - [ ] Variáveis na Vercel (service_role marcada como *Sensitive*)
 - [ ] `/privacidade` revisada pelo jurídico (razão social, CNPJ, DPO)

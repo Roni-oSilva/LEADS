@@ -1,12 +1,12 @@
-import type { SegmentValue } from "../constants";
-
 export interface SearchParams {
+  /** Filtro por nome da empresa. */
   query?: string;
-  segment?: SegmentValue | string;
+  /** Nichos (valores de src/lib/segments.ts). */
+  segments?: string[];
   country?: string;
   state?: string;
-  city?: string;
-  neighborhood?: string;
+  /** Cidades (no máximo 5 por pesquisa). */
+  cities?: string[];
   pageToken?: string;
   limit?: number;
 }
@@ -19,6 +19,9 @@ export interface ProviderLead {
   category?: string | null;
   phone?: string | null;
   whatsapp?: string | null;
+  email?: string | null;
+  /** Nicho em que o resultado foi classificado. */
+  segment?: string | null;
   website?: string | null;
   instagram?: string | null;
   address?: string | null;

@@ -1,3 +1,4 @@
+import { SegmentOptions } from "@/components/ui/segment-options";
 import { Filter, Users } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -5,9 +6,10 @@ import { Input, Select } from "@/components/ui/form-controls";
 import { EmptyState, PageHeader } from "@/components/ui/misc";
 import { Pagination } from "@/components/ui/pagination";
 import { LeadsTable, type LeadRow } from "@/components/crm/leads-table";
+import { BulkAddButton } from "@/components/crm/bulk-add";
 import { NewLeadButton } from "@/components/crm/new-lead-button";
 import { canWrite, getContext } from "@/lib/auth";
-import { SEGMENTS, UF_LIST } from "@/lib/constants";
+import { UF_LIST } from "@/lib/constants";
 import { applyLeadFilters, LEAD_SELECT, PAGE_SIZE, parseLeadQuery, type Sp } from "@/lib/leads/query";
 import { getStages } from "@/lib/leads/service";
 import { DEFAULT_WHATSAPP_TEMPLATE } from "@/lib/whatsapp/link";
@@ -40,11 +42,11 @@ export default async function CrmPage({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <PageHeader title="Meu CRM" description="Todos os leads salvos, com filtros, pontuação e histórico." actions={canWrite(ctx.role) ? <NewLeadButton /> : undefined} />
+      <PageHeader title="Meu CRM" description="Todos os leads salvos, com filtros, pontuação e histórico." actions={canWrite(ctx.role) ? <><BulkAddButton /><NewLeadButton /></> : undefined} />
       <form action="/crm" className="mb-4 grid grid-cols-2 gap-3 rounded-xl border border-border bg-card p-4 md:grid-cols-4 xl:grid-cols-6">
         <label className="col-span-2 text-xs text-muted-foreground">Buscar<Input name="q" defaultValue={f.q} placeholder="Empresa, contato, e-mail, cidade, telefone…" className="mt-1" /></label>
         <label className="text-xs text-muted-foreground">Etapa<Select name="stage" defaultValue={f.stage ?? ""} className="mt-1"><option value="">Todas</option>{stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></label>
-        <label className="text-xs text-muted-foreground">Segmento<Select name="segment" defaultValue={f.segment ?? ""} className="mt-1"><option value="">Todos</option>{SEGMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</Select></label>
+        <label className="text-xs text-muted-foreground">Segmento<Select name="segment" defaultValue={f.segment ?? ""} className="mt-1"><option value="">Todos</option><SegmentOptions /></Select></label>
         <label className="text-xs text-muted-foreground">Estado<Select name="state" defaultValue={f.state ?? ""} className="mt-1"><option value="">Todos</option>{UF_LIST.map((u) => <option key={u}>{u}</option>)}</Select></label>
         <label className="text-xs text-muted-foreground">Cidade<Input name="city" defaultValue={f.city} className="mt-1" /></label>
         <label className="text-xs text-muted-foreground">Prioridade<Select name="priority" defaultValue={f.priority ?? ""} className="mt-1"><option value="">Todas</option><option value="high">Alta (80–100)</option><option value="medium">Média (50–79)</option><option value="low">Baixa (0–49)</option></Select></label>

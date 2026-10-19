@@ -65,7 +65,7 @@ export function ScoringForm({ weights, targetSegments, targetStates, targetCitie
       </div>
       <p className="text-xs text-muted-foreground">Soma atual: {total}. Os pesos são normalizados automaticamente para totalizar 100.</p>
       <Field label="Segmentos-alvo (vazio = todos)">
-        <div className="grid gap-1.5 sm:grid-cols-2">{SEGMENTS.map((s) => <label key={s.value} className="flex items-center gap-2 text-sm"><Checkbox disabled={disabled} checked={segs.includes(s.value)} onChange={(e) => setSegs(e.target.checked ? [...segs, s.value] : segs.filter((x) => x !== s.value))} /> {s.label}</label>)}</div>
+        <div className="grid max-h-64 gap-1.5 overflow-y-auto rounded-lg border border-border p-3 sm:grid-cols-2">{SEGMENTS.map((s) => <label key={s.value} className="flex items-center gap-2 text-sm"><Checkbox disabled={disabled} checked={segs.includes(s.value)} onChange={(e) => setSegs(e.target.checked ? [...segs, s.value] : segs.filter((x) => x !== s.value))} /> {s.label}</label>)}</div>
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Estados-alvo (Ctrl/Cmd para vários)"><select multiple size={6} disabled={disabled} value={states} onChange={(e) => setStates([...e.target.selectedOptions].map((o) => o.value))} className="w-full rounded-lg border border-border bg-muted/60 p-2 text-sm">{UF_LIST.map((u) => <option key={u}>{u}</option>)}</select></Field>

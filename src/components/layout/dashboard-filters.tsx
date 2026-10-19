@@ -1,7 +1,7 @@
+import { SegmentOptions } from "@/components/ui/segment-options";
 import { Filter } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input, Select } from "@/components/ui/form-controls";
-import { SEGMENTS } from "@/lib/constants";
 
 export interface FilterValues {
   from: string; to: string; segment?: string; state?: string; city?: string; owner?: string; source?: string; g?: string;
@@ -14,7 +14,7 @@ export function DashboardFilters({ values, states, cities, owners, sources, acti
       <label className="text-xs text-muted-foreground">De<Input type="date" name="from" defaultValue={values.from} className="mt-1" /></label>
       <label className="text-xs text-muted-foreground">Até<Input type="date" name="to" defaultValue={values.to} className="mt-1" /></label>
       <label className="text-xs text-muted-foreground">Segmento
-        <Select name="segment" defaultValue={values.segment ?? ""} className="mt-1"><option value="">Todos</option>{SEGMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</Select>
+        <Select name="segment" defaultValue={values.segment ?? ""} className="mt-1"><option value="">Todos</option><SegmentOptions /></Select>
       </label>
       <label className="text-xs text-muted-foreground">Estado
         <Select name="state" defaultValue={values.state ?? ""} className="mt-1"><option value="">Todos</option>{states.map((s) => <option key={s}>{s}</option>)}</Select>

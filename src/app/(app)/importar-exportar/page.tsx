@@ -1,3 +1,4 @@
+import { SegmentOptions } from "@/components/ui/segment-options";
 import { Download } from "lucide-react";
 import { ExportFieldsScript } from "@/components/import/export-fields-script";
 import { ImportWizard } from "@/components/import/import-wizard";
@@ -7,7 +8,7 @@ import { Checkbox, Select } from "@/components/ui/form-controls";
 import { Alert, PageHeader } from "@/components/ui/misc";
 import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
 import { canWrite, getContext } from "@/lib/auth";
-import { SEGMENTS, UF_LIST } from "@/lib/constants";
+import { UF_LIST } from "@/lib/constants";
 import { EXPORT_FIELDS, IMPORT_FIELDS } from "@/lib/csv/leads-csv";
 import { getStages } from "@/lib/leads/service";
 import { formatDate } from "@/lib/utils";
@@ -35,7 +36,7 @@ export default async function ImportExportPage() {
             <form action="/api/leads/export" method="get" className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 <label className="text-xs text-muted-foreground">Etapa<Select name="stage" className="mt-1"><option value="">Todas</option>{stages.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</Select></label>
-                <label className="text-xs text-muted-foreground">Segmento<Select name="segment" className="mt-1"><option value="">Todos</option>{SEGMENTS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}</Select></label>
+                <label className="text-xs text-muted-foreground">Segmento<Select name="segment" className="mt-1"><option value="">Todos</option><SegmentOptions /></Select></label>
                 <label className="text-xs text-muted-foreground">Estado<Select name="state" className="mt-1"><option value="">Todos</option>{UF_LIST.map((u) => <option key={u}>{u}</option>)}</Select></label>
                 <label className="text-xs text-muted-foreground">Prioridade<Select name="priority" className="mt-1"><option value="">Todas</option><option value="high">Alta</option><option value="medium">Média</option><option value="low">Baixa</option></Select></label>
               </div>

@@ -1,23 +1,4 @@
-export const SEGMENTS = [
-  { value: "restaurante", label: "Restaurantes e pizzarias", query: "restaurante pizzaria" },
-  { value: "clinica_odontologica", label: "Clínicas odontológicas", query: "clínica odontológica dentista" },
-  { value: "oficina_mecanica", label: "Oficinas mecânicas", query: "oficina mecânica" },
-  { value: "salao_beleza", label: "Salões de beleza", query: "salão de beleza" },
-  { value: "nail_designer", label: "Nail designers", query: "nail designer manicure unhas" },
-  { value: "loja_roupas", label: "Lojas de roupas", query: "loja de roupas" },
-  { value: "sublimacao", label: "Lojas de sublimação", query: "sublimação personalizados" },
-  { value: "grafica", label: "Gráficas", query: "gráfica" },
-  { value: "academia", label: "Academias", query: "academia" },
-  { value: "imobiliaria", label: "Imobiliárias", query: "imobiliária" },
-  { value: "prestador_servicos", label: "Prestadores de serviços", query: "prestador de serviços" },
-  { value: "pme", label: "Pequenas e médias empresas", query: "empresa" },
-] as const;
-
-export type SegmentValue = (typeof SEGMENTS)[number]["value"];
-
-export function segmentLabel(value: string | null | undefined) {
-  return SEGMENTS.find((s) => s.value === value)?.label ?? value ?? "—";
-}
+export { SEGMENTS, SEGMENT_GROUPS, segmentLabel, type SegmentValue } from "./segments";
 
 export const UF_LIST = [
   "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", "MT", "MS", "MG", "PA",

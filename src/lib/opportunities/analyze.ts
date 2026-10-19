@@ -1,3 +1,5 @@
+import { APPOINTMENT_SERVICE, CATALOG_SEGMENTS, MENU_SEGMENTS, SERVICE_ORDER_SEGMENTS, STOCK_SEGMENTS } from "../segments";
+
 export interface WebsiteCheck {
   url: string;
   checkedAt: string;
@@ -28,13 +30,6 @@ export interface OpportunityDraft {
   verified: boolean;
   checked_at: string;
 }
-
-const APPOINTMENT_SEGMENTS: Record<string, string> = {
-  clinica_odontologica: "sistema_clinica",
-  salao_beleza: "sistema_beleza",
-  nail_designer: "sistema_beleza",
-  academia: "sistema_gestao",
-};
 
 /**
  * Gera sinais de oportunidade a partir de dados públicos já coletados e, opcionalmente,
@@ -111,11 +106,11 @@ export function analyzeOpportunities(
   }
 
   if (!lead.website) {
-    if (lead.segment === "restaurante") {
+    if (MENU_SEGMENTS.has(lead.segment ?? "")) {
       out.push({
         signal_key: "no_digital_menu",
         title: "Cardápio digital não identificado",
-        evidence: `Restaurante sem site informado em ${src}; não foi identificado cardápio digital próprio (não verificado).`,
+        evidence: `Estabelecimento de alimentação sem site informado em ${src}; não foi identificado cardápio digital próprio (não verificado).`,
         source: src,
         service: "cardapio_digital",
         confidence: "low",
@@ -124,7 +119,7 @@ export function analyzeOpportunities(
         checked_at: at,
       });
     }
-    if (["loja_roupas", "sublimacao", "grafica"].includes(lead.segment ?? "")) {
+    if (CATALOG_SEGMENTS.has(lead.segment ?? "")) {
       out.push({
         signal_key: "no_catalog",
         title: "Catálogo digital não identificado",
@@ -153,7 +148,7 @@ export function analyzeOpportunities(
     });
   }
 
-  const sched = APPOINTMENT_SEGMENTS[lead.segment ?? ""];
+  const sched = APPOINTMENT_SERVICE[lead.segment ?? ""];
   if (sched) {
     out.push({
       signal_key: "scheduling_need",
@@ -168,7 +163,7 @@ export function analyzeOpportunities(
     });
   }
 
-  if (lead.segment === "oficina_mecanica" || lead.segment === "grafica") {
+  if (SERVICE_ORDER_SEGMENTS.has(lead.segment ?? "")) {
     out.push({
       signal_key: "service_orders_need",
       title: "Possível necessidade de ordens de serviço",
@@ -181,7 +176,7 @@ export function analyzeOpportunities(
       checked_at: at,
     });
   }
-  if (["loja_roupas", "sublimacao"].includes(lead.segment ?? "")) {
+  if (STOCK_SEGMENTS.has(lead.segment ?? "")) {
     out.push({
       signal_key: "stock_need",
       title: "Possível necessidade de controle de estoque",
