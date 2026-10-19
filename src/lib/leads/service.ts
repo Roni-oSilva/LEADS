@@ -206,3 +206,53 @@ export async function moveLeadToStage(a: Actor, leadId: string, stageId: string)
   await refreshScore(a, leadId);
   return { changed: true as const };
 }
+
+/** Inserção em lote (importação CSV): ~6 consultas por lote, com deduplicação, evidências e pontuação. */
+export async function bulkInsertLeads(a: Actor, rows: NewLeadRow[], source: { key: string; name: string; kind: string }, skipDuplicates = true) {
+  const keyed = rows.map((r) => ({ row: r, keys: computeDedupeKeys({ ...r, source_key: source.key }) }));
+  const allKeys = [...new Set(keyed.flatMap((k) => k.keys))];
+  const existing = new Set<string>();
+  if (allKeys.length) {
+    const { data } = await a.supabase.from("leads").select("dedupe_keys").eq("organization_id", a.orgId).overlaps("dedupe_keys", allKeys);
+    for (const l of data ?? []) for (const k of l.dedupe_keys as string[]) existing.add(k);
+  }
+  const seen = new Set<string>();
+  const accepted: typeof keyed = [];
+  const duplicateIdx: number[] = [];
+  keyed.forEach((k, i) => {
+    const dup = k.keys.some((key) => existing.has(key) || seen.has(key));
+    if (dup && skipDuplicates) return void duplicateIdx.push(i);
+    k.keys.forEach((key) => seen.add(key));
+    accepted.push(k);
+  });
+  if (accepted.length === 0) return { imported: 0, duplicates: duplicateIdx };
+
+  const stages = await getStages(a.supabase, a.orgId);
+  const stageNew = stages.find((s) => s.key === "new")?.id ?? null;
+  const stageAnalyzed = stages.find((s) => s.key === "analyzed")?.id ?? stageNew;
+  const sourceId = await ensureSource(a.supabase, a.orgId, source.key, source.name, source.kind);
+  const config = scoringConfigFrom(a.orgSettings);
+
+  const prepared = accepted.map(({ row, keys }) => {
+    const drafts = analyzeOpportunities({ segment: row.segment ?? null, website: row.website ?? null, instagram: row.instagram ?? null, whatsapp: row.whatsapp ?? null, phone: row.phone ?? null, source_name: source.name });
+    const score = scoreLead({ segment: row.segment ?? null, state: row.state ?? null, city: row.city ?? null, phone: row.phone ?? null, whatsapp: row.whatsapp ?? null, email: row.email ?? null, do_not_contact: false, data_updated_at: new Date().toISOString(), showed_interest: false, evidence: drafts.map((d) => ({ confidence: d.confidence, verified: d.verified })) }, config);
+    const { notes, ...clean } = row as NewLeadRow & { notes?: string };
+    return { notes, drafts, score, insert: { ...clean, country: row.country ?? "BR", organization_id: a.orgId, source_id: sourceId, stage_id: drafts.length ? stageAnalyzed : stageNew, owner_id: a.userId, created_by: a.userId, dedupe_keys: keys, data_updated_at: new Date().toISOString(), score: score.score, score_priority: score.priority, score_breakdown: score.breakdown, score_updated_at: new Date().toISOString() } };
+  });
+
+  const { data: inserted, error } = await a.supabase.from("leads").insert(prepared.map((p) => p.insert)).select("id");
+  if (error) throw error;
+  const ids = (inserted ?? []).map((r) => r.id as string);
+
+  const evidence = ids.flatMap((id, i) => prepared[i].drafts.map((d) => ({ ...d, organization_id: a.orgId, lead_id: id })));
+  const scores = ids.map((id, i) => ({ organization_id: a.orgId, lead_id: id, score: prepared[i].score.score, priority: prepared[i].score.priority, breakdown: prepared[i].score.breakdown }));
+  const acts = ids.map((id) => ({ organization_id: a.orgId, lead_id: id, user_id: a.userId, type: "system", summary: `Lead criado via ${source.name}.`, metadata: { source: source.key } }));
+  const notes = ids.flatMap((id, i) => (prepared[i].notes ? [{ organization_id: a.orgId, lead_id: id, user_id: a.userId, body: prepared[i].notes! }] : []));
+  await Promise.all([
+    evidence.length ? a.supabase.from("lead_evidence").insert(evidence) : null,
+    a.supabase.from("lead_scores").insert(scores),
+    a.supabase.from("lead_activities").insert(acts),
+    notes.length ? a.supabase.from("lead_notes").insert(notes) : null,
+  ]);
+  return { imported: ids.length, duplicates: duplicateIdx };
+}
